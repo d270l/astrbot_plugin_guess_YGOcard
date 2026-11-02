@@ -105,5 +105,137 @@
     "hint": "本地卡库查不到时，尝试通过 ygocdb.com 的接口查询卡名",
     "type": "bool",
     "default": false
+  },
+  "text_start": {
+    "description": "开局文案",
+    "hint": "留空使用内置文案。可用占位符：{named} 称呼、{times} 次数、{times_text} 中文次数、{timeout} 秒数；用 | 分隔多条随机",
+    "type": "string",
+    "default": ""
+  },
+  "text_timeout": {
+    "description": "超时公布答案文案",
+    "hint": "留空使用内置文案。可用占位符：{name} 卡名、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_win": {
+    "description": "猜对文案",
+    "hint": "留空使用内置文案。可用占位符：{name} 卡名、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_lose": {
+    "description": "机会用尽文案",
+    "hint": "留空使用内置文案。可用占位符：{name} 卡名、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_skip": {
+    "description": "跳过 / 不知道 的文案",
+    "hint": "留空使用内置文案。可用占位符：{name} 卡名、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_tip": {
+    "description": "猜错提示文案",
+    "hint": "留空使用内置文案。可用占位符：{hint} 提示片段、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_hint_type": {
+    "description": "第一次猜错的提示片段",
+    "hint": "默认「是{type}卡」，{type} 为怪兽 / 魔法 / 陷阱",
+    "type": "string",
+    "default": ""
+  },
+  "text_hint_zz": {
+    "description": "第二次猜错的种族提示片段",
+    "hint": "默认「种族是{zz}」，仅怪兽使用",
+    "type": "string",
+    "default": ""
+  },
+  "text_hint_attribute": {
+    "description": "第二次猜错的属性提示片段",
+    "hint": "默认「属性是{attribute}」，仅怪兽使用",
+    "type": "string",
+    "default": ""
+  },
+  "text_hint_fulltype": {
+    "description": "第二次猜错的完整类型提示片段",
+    "hint": "默认「完整类型是{type}」，{type} 例如「怪兽 效果」",
+    "type": "string",
+    "default": ""
+  },
+  "text_left": {
+    "description": "剩余机会文案",
+    "hint": "接在提示后面的那句，默认「还有{left}次机会！」，可用 {left} 占位",
+    "type": "string",
+    "default": ""
+  },
+  "text_cd": {
+    "description": "冷却中的提示",
+    "hint": "留空使用内置文案。可用占位符：{cd} 剩余时间、{named} 称呼",
+    "type": "string",
+    "default": ""
+  },
+  "text_reset": {
+    "description": "重置成功的提示",
+    "hint": "猜卡重置 的回复，默认「猜卡状态已重置」",
+    "type": "string",
+    "default": ""
+  },
+  "text_off": {
+    "description": "本群功能已关闭的提示",
+    "hint": "默认「猜卡功能已关闭！」",
+    "type": "string",
+    "default": ""
+  },
+  "text_no_permission": {
+    "description": "权限不足的提示",
+    "hint": "非群主 / 群管理员 / Bot 管理员执行管理指令时的回复",
+    "type": "string",
+    "default": ""
+  },
+  "text_image_missing": {
+    "description": "找不到卡图的提示",
+    "hint": "默认「对应图片不存在，无法进行猜卡~」",
+    "type": "string",
+    "default": ""
+  },
+  "text_not_ready": {
+    "description": "插件未就绪的提示",
+    "hint": "初始化失败或卡库缺失时开局会回这一句",
+    "type": "string",
+    "default": ""
+  },
+  "text_invalid_cd": {
+    "description": "猜卡cd 参数错误的提示",
+    "hint": "默认「无效参数: {arg}, 请输入 正整数 或 0 为参数」，可用 {arg} 占位",
+    "type": "string",
+    "default": ""
+  },
+  "text_invalid_switch": {
+    "description": "猜卡功能 参数错误的提示",
+    "hint": "默认「无效参数: {arg}, 请输入 on 或 off 为参数」，可用 {arg} 占位",
+    "type": "string",
+    "default": ""
+  },
+  "text_cd_updated": {
+    "description": "猜卡cd 设置成功的提示",
+    "hint": "默认「cd更新成功 {old} -> {new}」，可用 {old} / {new} 占位",
+    "type": "string",
+    "default": ""
+  },
+  "text_switch_off": {
+    "description": "猜卡功能 off 的回复",
+    "hint": "默认「功能已经关闭」",
+    "type": "string",
+    "default": ""
+  },
+  "text_switch_on": {
+    "description": "猜卡功能 on 的回复",
+    "hint": "默认「功能已经开启」",
+    "type": "string",
+    "default": ""
   }
 }

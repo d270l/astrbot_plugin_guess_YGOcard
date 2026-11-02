@@ -25,6 +25,8 @@ from .core import texts
 from .core.carddb import CardDB
 from .core.game import GuessConfig, GuessGameManager, Reply, uid_of
 from .core.render import resolve_font
+from .core.replies import KEYS as REPLY_KEYS
+from .core.replies import ReplyTemplates
 from .core.store import GuessStore
 
 PLUGIN_NAME = "astrbot_plugin_guess_YGOcard"
@@ -64,6 +66,7 @@ class GuessCardPlugin(Star):
         self.config = config
         # 指令可能在 initialize 之前就被触发，先用默认值兜底
         self.cfg = GuessConfig()
+        self.replies = ReplyTemplates()
         self.db: Optional[CardDB] = None
         self.store: Optional[GuessStore] = None
         self.manager: Optional[GuessGameManager] = None
@@ -93,6 +96,10 @@ class GuessCardPlugin(Star):
             str(self.config.get("mess_type", "正常")),
             texts.MESS_TYPE_NORMAL,
         )
+        self.replies = ReplyTemplates(
+            {key: self.config.get(key, "") for key in REPLY_KEYS},
+            mess_type=mess_type,
+        )
         cdb_path = self._resolve_cdb(plugin_dir)
         nickname_path = plugin_dir / "data" / "nickname.json"
         try:
@@ -110,6 +117,7 @@ class GuessCardPlugin(Star):
             data_dir / "guess_cfg.json",
             default_cd=self._int("default_cd", 20),
             mess_type=mess_type,
+            replies=self.replies,
         )
         self.font_path = resolve_font(str(self.config.get("font_path", "") or ""), plugin_dir)
         self.cfg = GuessConfig(
@@ -134,6 +142,7 @@ class GuessCardPlugin(Star):
             tmp_dir=cache_dir,
             font_path=self.font_path,
             send_cb=self._send_by_session,
+            replies=self.replies,
         )
         _PLUGIN = self
         logger.info(
@@ -217,7 +226,7 @@ class GuessCardPlugin(Star):
     # ------------------------------------------------------------------ 各指令实现
     async def _do_start(self, event: AstrMessageEvent) -> Optional[Reply]:
         if self.manager is None:
-            return Reply(text="猜卡功能还没有准备好，请稍后再试~")
+            return Reply(text=self.replies.not_ready())
         group_id, user_id = self._group_user(event)
         return await self.manager.start(group_id, user_id, event.unified_msg_origin)
 
@@ -229,12 +238,12 @@ class GuessCardPlugin(Star):
 
     def _do_cd(self, event: AstrMessageEvent, arg: str) -> Reply:
         if not self._is_privileged(event):
-            return Reply(text=texts.NO_PERMISSION_TEXT)
+            return Reply(text=self.replies.no_permission())
         message = str(arg).replace(" ", "")
         try:
             cd_time = int(message)
         except (TypeError, ValueError):
-            return Reply(text=f"无效参数: {message}, 请输入 正整数 或 0 为参数")
+            return Reply(text=self.replies.invalid_cd(message))
         sid = self._session_of_group(event)
         if not _verify_sid(sid):
             return Reply(text=f"无效目标对象: {sid}")
@@ -243,14 +252,14 @@ class GuessCardPlugin(Star):
 
     def _do_switch(self, event: AstrMessageEvent, arg: str) -> Reply:
         if not self._is_privileged(event):
-            return Reply(text=texts.NO_PERMISSION_TEXT)
+            return Reply(text=self.replies.no_permission())
         message = str(arg)
         if "off" in message:
             add_mode = True
         elif "on" in message:
             add_mode = False
         else:
-            return Reply(text=f"无效参数: {message}, 请输入 on 或 off 为参数")
+            return Reply(text=self.replies.invalid_switch(message))
         sid = self._session_of_group(event)
         if not _verify_sid(sid):
             return Reply(text=f"无效目标对象: {sid}")

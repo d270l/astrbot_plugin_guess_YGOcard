@@ -27,6 +27,7 @@ from PIL import Image
 from . import texts
 from .carddb import Card, CardDB, is_guess_win
 from .render import crop_card, get_guess_img, save_png
+from .replies import ReplyTemplates
 from .store import GuessStore
 
 
@@ -91,10 +92,12 @@ class GuessGameManager:
         tmp_dir: Path,
         font_path: Optional[Path],
         send_cb: Callable[[str, Reply], "asyncio.Future | None"],
+        replies: Optional[ReplyTemplates] = None,
     ) -> None:
         self.db = db
         self.store = store
         self.cfg = cfg
+        self.replies = replies if replies is not None else ReplyTemplates(mess_type=cfg.mess_type)
         self.pics_dir = Path(pics_dir)
         self.tmp_dir = Path(tmp_dir)
         self.font_path = font_path
@@ -126,11 +129,11 @@ class GuessGameManager:
 
             card = await asyncio.to_thread(self._random_card)
             if card is None:
-                return Reply(text=texts.IMAGE_MISSING_TEXT)
+                return Reply(text=self.replies.image_missing())
 
             prepared = await self._prepare(card)
             if prepared is None:
-                return Reply(text=texts.IMAGE_MISSING_TEXT)
+                return Reply(text=self.replies.image_missing())
             question, answer = prepared
 
             self.store.update_last_send(session_id)
@@ -150,15 +153,8 @@ class GuessGameManager:
             self._tasks.add(game.task)
             game.task.add_done_callback(self._tasks.discard)
 
-            # 原插件的台词里固定写「三次」，这里按配置的次数显示
-            times_text = "三" if self.cfg.guess_times == 3 else str(self.cfg.guess_times)
             return Reply(
-                text=(
-                    texts.get_named(self.cfg.mess_type)
-                    + f"，你有{times_text}次机会哟~"
-                    + str(self.cfg.answer_timeout)
-                    + texts.TIMEOUT_TEXT_TAIL
-                ),
+                text=self.replies.start(self.cfg.guess_times, self.cfg.answer_timeout),
                 image=question,
                 at=True,
             )
@@ -186,7 +182,7 @@ class GuessGameManager:
         if name in texts.SKIP_WORDS:
             self._end(uid)
             return Reply(
-                text=texts.guess_skip(self.cfg.mess_type).format(card.name),
+                text=self.replies.skip(card.name),
                 image=game.answer,
                 at=True,
             )
@@ -196,36 +192,36 @@ class GuessGameManager:
             if game.time == 1:
                 self._end(uid)
                 return Reply(
-                    text=texts.guess_lose(self.cfg.mess_type).format(card.name),
+                    text=self.replies.lose(card.name),
                     image=game.answer,
                     at=True,
                 )
             if game.time == 3:
-                hint = texts.guess_tips(self.cfg.mess_type).format("是" + card.mainType + "卡")
+                hint = self.replies.tip(self.replies.hint_type(card.mainType))
             elif game.time == 2:
                 if card.mainType == "怪兽":
                     ran = random.randint(0, 2)
                     if ran == 0:
-                        hint = texts.guess_tips(self.cfg.mess_type).format("种族是" + card.zz)
+                        hint = self.replies.tip(self.replies.hint_zz(card.zz))
                     elif ran == 1:
-                        hint = texts.guess_tips(self.cfg.mess_type).format("属性是" + card.attribute)
+                        hint = self.replies.tip(self.replies.hint_attribute(card.attribute))
                     else:
-                        hint = texts.guess_tips(self.cfg.mess_type).format("完整类型是" + card.type)
+                        hint = self.replies.tip(self.replies.hint_fulltype(card.type))
                 else:
-                    hint = texts.guess_tips(self.cfg.mess_type).format("完整类型是" + card.type)
+                    hint = self.replies.tip(self.replies.hint_fulltype(card.type))
             else:
-                hint = texts.guess_tips(self.cfg.mess_type).format("完整类型是" + card.type)
+                hint = self.replies.tip(self.replies.hint_fulltype(card.type))
             # 原插件一半的台词里自带「这张卡是」，再拼上「是怪兽卡」会出现「是是」
             hint = hint.replace("是是", "是")
             game.time -= 1
             return Reply(
-                text=hint + "\r\n还有{0}次机会！".format(game.time),
+                text=hint + self.replies.left(game.time),
                 at=True,
             )
 
         self._end(uid)
         return Reply(
-            text=texts.guess_win(self.cfg.mess_type).format(card.name),
+            text=self.replies.win(card.name),
             image=game.answer,
             at=True,
         )
@@ -235,7 +231,7 @@ class GuessGameManager:
         uid = uid_of(group_id, user_id)
         if uid in self.games:
             self._end(uid)
-            return Reply(text=texts.RESET_TEXT)
+            return Reply(text=self.replies.reset())
         # 原插件不在局中时静默
         return None
 
@@ -250,7 +246,7 @@ class GuessGameManager:
             self.games.pop(uid, None)
             game.end = True
             reply = Reply(
-                text=texts.guess_timeout(self.cfg.mess_type).format(game.card.name),
+                text=self.replies.timeout(game.card.name),
                 image=game.answer,
                 at=False,
             )

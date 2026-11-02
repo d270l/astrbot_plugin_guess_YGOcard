@@ -17,15 +17,23 @@ from pathlib import Path
 from typing import Optional
 
 from . import texts
+from .replies import ReplyTemplates
 
 
 class GuessStore:
     """管理每个群 / 用户的猜卡冷却与开关。"""
 
-    def __init__(self, path: Path, default_cd: int = 20, mess_type: int = texts.MESS_TYPE_NORMAL) -> None:
+    def __init__(
+        self,
+        path: Path,
+        default_cd: int = 20,
+        mess_type: int = texts.MESS_TYPE_NORMAL,
+        replies: ReplyTemplates | None = None,
+    ) -> None:
         self.path = Path(path)
         self.guess_cd = default_cd if default_cd > 0 else 0
         self.mess_type = mess_type
+        self.replies = replies if replies is not None else ReplyTemplates(mess_type=mess_type)
         self.cfg: dict = {}
         self.read_cfg()
 
@@ -73,7 +81,7 @@ class GuessStore:
     def check_permission(self, session_id: str, group_session: Optional[str]) -> None:
         """不满足条件时抛 ``PermissionError``（消息即原插件的提示文案）。"""
         if self.read_ban_list(group_session):
-            raise PermissionError(texts.FUNCTION_OFF_TEXT)
+            raise PermissionError(self.replies.off())
 
         target = group_session if group_session is not None else session_id
         time_left = self.read_cd(target) + self.read_last_send(session_id) - time.time()
@@ -89,7 +97,7 @@ class GuessStore:
                 + (str(round(minutes)) + "分钟" if minutes else "")
                 + (str(round(seconds, 3)) + "秒" if seconds else "")
             )
-            raise PermissionError(f"{texts.guess_sendwitchoutcd(self.mess_type)} 你的CD还有{cd_msg}！")
+            raise PermissionError(self.replies.cd(cd_msg))
 
     # ------------------------------------------------------------------ 更新
     def update_last_send(self, session_id: str) -> None:
@@ -106,21 +114,21 @@ class GuessStore:
             self.write_cfg()
         self.cfg[session_id]["cd"] = cd_time
         self.write_cfg()
-        return f"cd更新成功 {cd_time_old} -> {cd_time}"
+        return self.replies.cd_updated(cd_time_old, cd_time)
 
     def update_ban_list(self, session_id: str, add_mode: bool) -> str:
         if add_mode:
             try:
                 if session_id in self.cfg["ban"]:
-                    return "功能已经关闭"
+                    return self.replies.switch_off()
             except KeyError:
                 self.cfg["ban"] = []
             self.cfg["ban"].append(session_id)
             self.write_cfg()
-            return "功能已经关闭"
+            return self.replies.switch_off()
         try:
             self.cfg["ban"].remove(session_id)
             self.write_cfg()
-            return "功能已经开启"
+            return self.replies.switch_on()
         except (ValueError, KeyError):
-            return "功能已经开启"
+            return self.replies.switch_on()
