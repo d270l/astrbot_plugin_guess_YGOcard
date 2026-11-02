@@ -1,0 +1,109 @@
+{
+  "cdb_path": {
+    "description": "卡库路径",
+    "hint": "cards.cdb 的路径，可填文件或所在目录；留空则使用插件自带的 data/cards.cdb",
+    "type": "string",
+    "default": ""
+  },
+  "pics_dir": {
+    "description": "卡图目录",
+    "hint": "存放 {卡图ID}.jpg 的目录，留空则使用插件目录下的 data/pics",
+    "type": "string",
+    "default": ""
+  },
+  "use_web_pic": {
+    "description": "本地没有卡图时联网下载",
+    "hint": "开启后，本地找不到卡图会按「卡图地址模板」下载并缓存到卡图目录",
+    "type": "bool",
+    "default": true
+  },
+  "pic_url_template": {
+    "description": "卡图地址模板",
+    "hint": "用 {id} 表示卡图编号，例如 https://cdn.233.momobako.com/ygopro/pics/{id}.jpg",
+    "type": "string",
+    "default": "https://cdn.233.momobako.com/ygopro/pics/{id}.jpg"
+  },
+  "guess_times": {
+    "description": "猜卡机会次数",
+    "hint": "每局可以猜几次，默认 3",
+    "type": "int",
+    "slider": {
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    "default": 3
+  },
+  "answer_timeout": {
+    "description": "公布答案时间（秒）",
+    "hint": "开局多少秒后自动公布答案",
+    "type": "int",
+    "slider": {
+      "min": 5,
+      "max": 300,
+      "step": 5
+    },
+    "default": 30
+  },
+  "blur_scale": {
+    "description": "模糊程度",
+    "hint": "题图模糊模式使用的缩放倍数，越大越模糊",
+    "type": "int",
+    "slider": {
+      "min": 2,
+      "max": 20,
+      "step": 1
+    },
+    "default": 7
+  },
+  "cut_size": {
+    "description": "切割块数",
+    "hint": "题图切割模式把卡图切成几块，只显示其中一块",
+    "type": "int",
+    "slider": {
+      "min": 2,
+      "max": 16,
+      "step": 1
+    },
+    "default": 6
+  },
+  "at_sender": {
+    "description": "开局时 @ 玩家",
+    "hint": "关闭后开局消息不再 @ 出题对象",
+    "type": "bool",
+    "default": true
+  },
+  "default_cd": {
+    "description": "默认冷却时间（秒）",
+    "hint": "同一玩家两次开局的间隔，可用「猜卡cd 秒数」按群修改",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 600,
+      "step": 5
+    },
+    "default": 20
+  },
+  "mess_type": {
+    "description": "语录风格",
+    "hint": "「正常」或「雌小鬼」，沿用原插件的两套台词",
+    "type": "string",
+    "options": [
+      "正常",
+      "雌小鬼"
+    ],
+    "default": "正常"
+  },
+  "font_path": {
+    "description": "字符画字体",
+    "hint": "字符画模式使用的等宽字体路径，留空则自动查找 consola / DejaVu Sans Mono / Noto Sans Mono",
+    "type": "string",
+    "default": ""
+  },
+  "use_web_search": {
+    "description": "启用 ygocdb 兜底查询",
+    "hint": "本地卡库查不到时，尝试通过 ygocdb.com 的接口查询卡名",
+    "type": "bool",
+    "default": false
+  }
+}

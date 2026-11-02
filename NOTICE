@@ -1,0 +1,15 @@
+# NOTICE
+
+本项目的玩法设计、提示文案与出题算法移植自：
+
+- nonebot-plugin-ocgbot-v2 <https://github.com/fireinsect/nonebot-plugin-ocgbot-v2>
+  Copyright (c) fireinsect and contributors
+  Licensed under the MIT License
+
+原项目基于 MIT 协议发布，本移植版本同样以 MIT 协议发布，并保留上述署名。
+
+## 第三方资源
+
+- `data/cards.cdb`：游戏王卡片数据库，取自 YGOPRO 生态的公开卡库（`cards.cdb`）。
+- 卡图默认从 `https://cdn.233.momobako.com/ygopro/pics/{id}.jpg` 在线获取，本项目不打包任何卡图。
+- 游戏王及其卡片名称、卡图版权归 KONAMI / 原作者所有，本项目仅用于学习与技术交流。
