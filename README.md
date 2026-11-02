@@ -271,17 +271,7 @@ quiz = get_guess_img(crop_card(Image.open("pic.jpg"), card.type))
 
 ---
 
-## 🚀 发布到 AstrBot 插件市场
 
-想让它出现在 AstrBot 面板的 **插件市场** 里，可以按官方流程提交：
-
-1. 确认 `metadata.yaml` 里的 `name` / `version` / `repo` 与本仓库一致（本仓库已填好 `https://github.com/d270l/astrbot_plugin_guess_YGOcard`）；
-2. 在仓库里打 tag 并写一个 Release（例如 `v1.0.0`），方便市场展示版本；
-3. 打开 [AstrBot Cloud 插件发布页](https://cloud.astrbot.app/publish)，提交仓库地址并等待审核。
-
-不发布到市场也能用：在面板 **安装插件（+）→ 从链接安装** 里填本仓库地址即可。
-
----
 
 ## 🙏 致谢
 
