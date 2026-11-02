@@ -1,6 +1,5 @@
 <div align="center">
 
-<img src="logo.png" width="160" alt="logo" />
 
 # astrbot_plugin_guess_YGOcard
 
