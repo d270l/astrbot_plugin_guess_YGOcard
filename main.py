@@ -19,6 +19,7 @@ from typing import Optional
 import astrbot.api.message_components as Comp
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
+from astrbot.api.provider import ProviderRequest
 from astrbot.api.star import Context, Star, StarTools
 
 from .core import texts
@@ -132,6 +133,8 @@ class GuessCardPlugin(Star):
                 or "https://cdn.233.momobako.com/ygopro/pics/{id}.jpg",
             ),
             mess_type=mess_type,
+            llm_context=bool(self.config.get("llm_context", True)),
+            llm_context_max=max(1, self._int("llm_context_max", 8)),
         )
         pics_dir = self._resolve_pics_dir(plugin_dir, data_dir)
         self.manager = GuessGameManager(
@@ -223,12 +226,33 @@ class GuessCardPlugin(Star):
         if reply is not None:
             yield self._result(event, reply, event.get_sender_id())
 
+    # ------------------------------------------------------------------ LLM
+    @filter.on_llm_request()
+    async def inject_guess_context(self, event: AstrMessageEvent, req: ProviderRequest) -> None:
+        """请求大模型前，把本会话的猜卡进度写进 system prompt。"""
+        if not self.cfg.llm_context or self.manager is None:
+            return
+        group_id, user_id = self._group_user(event)
+        try:
+            extra = self.manager.describe_games(
+                event.unified_msg_origin, group_id, user_id, self.cfg.llm_context_max
+            )
+        except Exception as exc:  # 上下文注入失败不能影响正常对话
+            logger.debug(f"[guess-card] 注入猜卡上下文失败: {exc}")
+            return
+        if not extra:
+            return
+        base = (req.system_prompt or "").rstrip()
+        req.system_prompt = f"{base}\n\n{extra}" if base else extra
+
     # ------------------------------------------------------------------ 各指令实现
     async def _do_start(self, event: AstrMessageEvent) -> Optional[Reply]:
         if self.manager is None:
             return Reply(text=self.replies.not_ready())
         group_id, user_id = self._group_user(event)
-        return await self.manager.start(group_id, user_id, event.unified_msg_origin)
+        return await self.manager.start(
+            group_id, user_id, event.unified_msg_origin, event.get_sender_name() or ""
+        )
 
     def _do_reset(self, event: AstrMessageEvent) -> Optional[Reply]:
         if self.manager is None:

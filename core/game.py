@@ -44,6 +44,8 @@ class GuessConfig:
     pic_url_template: str = "https://cdn.233.momobako.com/ygopro/pics/{id}.jpg"
     download_timeout: float = 15.0
     mess_type: int = texts.MESS_TYPE_NORMAL
+    llm_context: bool = True
+    llm_context_max: int = 8
 
 
 @dataclass
@@ -66,6 +68,8 @@ class Game:
     group_session: Optional[str]
     session_id: str
     user_id: str
+    user_name: str = ""
+    deadline: float = 0.0
     end: bool = False
     task: Optional[asyncio.Task] = field(default=None, repr=False)
 
@@ -114,7 +118,9 @@ class GuessGameManager:
         return self.games.get(uid)
 
     # ------------------------------------------------------------------ 开局
-    async def start(self, group_id: str, user_id: str, umo: str) -> Optional[Reply]:
+    async def start(
+        self, group_id: str, user_id: str, umo: str, user_name: str = ""
+    ) -> Optional[Reply]:
         uid = uid_of(group_id, user_id)
         if uid in self.games or uid in self._pending:
             # 原插件在这里静默 finish()
@@ -147,6 +153,8 @@ class GuessGameManager:
                 group_session=group_session,
                 session_id=session_id,
                 user_id=user_id,
+                user_name=user_name,
+                deadline=time.time() + self.cfg.answer_timeout,
             )
             self.games[uid] = game
             game.task = asyncio.create_task(self._timeout_worker(uid, card.cardId))
@@ -234,6 +242,61 @@ class GuessGameManager:
             return Reply(text=self.replies.reset())
         # 原插件不在局中时静默
         return None
+
+    # ------------------------------------------------------------ LLM 上下文
+    def describe_games(
+        self, umo: str, group_id: str, user_id: str, limit: int = 8
+    ) -> str:
+        """把本会话的猜卡进度整理成一段可注入 system prompt 的说明。
+
+        只描述进度，不包含答案卡名——避免大模型顺口把答案说出来。
+        """
+        now = time.time()
+        active = [g for g in self.games.values() if not g.end and g.umo == umo]
+        speaker_uid = uid_of(group_id, user_id)
+        lines: list[str] = []
+        if active:
+            lines.append(
+                f"[猜一张卡] 本会话有 {len(active)} 位玩家正在猜卡，"
+                "你只知道这些进度，回答时不要编造或透露答案卡名："
+            )
+            shown = active[:limit]
+            for game in shown:
+                label = self._player_label(game)
+                if game.uid == speaker_uid:
+                    label += "（当前发言人）"
+                lines.append(f"- {label}：{self._progress(game, now)}")
+            if len(active) > len(shown):
+                lines.append(f"- 另有 {len(active) - len(shown)} 位玩家在猜卡")
+            speaker = next((g for g in active if g.uid == speaker_uid), None)
+            if speaker is not None and speaker not in shown:
+                lines.append(f"- 当前发言人也在猜卡，{self._progress(speaker, now)}")
+
+        cooldown = self._cooldown_left(group_id, user_id, now)
+        if cooldown > 0:
+            lines.append(f"- 当前发言人的猜卡冷却还剩 {int(cooldown)} 秒，现在开局会被拒绝")
+        if not lines:
+            return ""
+        lines.append("被问起猜卡时可按上述进度回答；用户正在猜卡时不要主动剧透。")
+        return "\n".join(lines)
+
+    @staticmethod
+    def _player_label(game: Game) -> str:
+        name = (game.user_name or "").strip()
+        return f"{name}({game.user_id})" if name else f"用户{game.user_id}"
+
+    @staticmethod
+    def _progress(game: Game, now: float) -> str:
+        left = max(0, int(round(game.deadline - now)))
+        return f"还剩 {game.time} 次机会，约 {left} 秒后公布答案"
+
+    def _cooldown_left(self, group_id: str, user_id: str, now: float) -> float:
+        group_session, session_id = session_of(group_id, user_id)
+        target = group_session if group_session is not None else session_id
+        try:
+            return self.store.read_cd(target) + self.store.read_last_send(session_id) - now
+        except Exception:
+            return 0.0
 
     # ------------------------------------------------------------------ 超时
     async def _timeout_worker(self, uid: str, card_id: int) -> None:
